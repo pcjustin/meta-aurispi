@@ -1,5 +1,5 @@
 [Unit]
-Description=UPnP Renderer front-end to MPD
+Description=UPnP Renderer front-end to MPD (CPU 3 isolated)
 After=network-online.target mpd-auris.service
 Wants=network-online.target
 
@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 User=upmpdcli
 Group=upmpdcli
-ExecStart=/usr/bin/upmpdcli -c /etc/upmpdcli.conf
+ExecStart=/usr/bin/taskset -c 3 /usr/bin/chrt -f 70 /usr/bin/upmpdcli -c /etc/upmpdcli.conf
 Restart=always
 RestartSec=1min
 
