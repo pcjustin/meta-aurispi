@@ -10,4 +10,7 @@ IMAGE_INSTALL:append = " \
     mpd \
     mpd-auris \
     upmpdcli \
+    shairport-sync \
+    avahi-daemon \
+    libconfig \
 "

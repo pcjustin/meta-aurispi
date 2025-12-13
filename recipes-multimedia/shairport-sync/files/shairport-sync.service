@@ -1,0 +1,20 @@
+[Unit]
+Description=Shairport Sync AirPlay Audio Receiver
+After=sound.target network.target avahi-daemon.service
+Requires=avahi-daemon.service
+
+[Service]
+Type=simple
+User=shairport-sync
+Group=audio
+
+ExecStart=/usr/bin/shairport-sync -c /etc/shairport-sync.conf
+
+Restart=on-failure
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

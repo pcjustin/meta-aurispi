@@ -1,0 +1,40 @@
+From f82f65761dee127cf0c0eb56f060f92cb716af9d Mon Sep 17 00:00:00 2001
+From: Camel <pcjustin@icloud.com>
+Date: Sun, 14 Dec 2025 00:07:29 +0800
+Subject: [PATCH] Remove user installation dependency from systemv and systemd
+ targets
+
+The INSTALL_USER_TARGET dependency is not needed for the systemv and systemd installation targets. Removing these dependencies simplifies the build process.
+
+Upstream-Status: Inappropriate [configuration]
+
+Signed-off-by: Camel <pcjustin@icloud.com>
+---
+ Makefile.am | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 298f59be..cc895c83 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -278,7 +278,7 @@ INSTALL_SYSTEMV_TARGET = install-systemv-local
+ # will be stored in a scripts folder in the _build_ folder
+ # which will be the source folder if you're not using a separate build folder
+ 
+-$(INSTALL_SYSTEMV_TARGET): scripts/shairport-sync $(INSTALL_USER_TARGET)
++$(INSTALL_SYSTEMV_TARGET): scripts/shairport-sync
+ 	install -d $(DESTDIR)$(sysconfdir)/init.d
+ 	[ -e $(DESTDIR)$(sysconfdir)/init.d/shairport-sync ] || install -m 0755 scripts/shairport-sync $(DESTDIR)$(sysconfdir)/init.d
+ 
+@@ -298,7 +298,7 @@ INSTALL_SYSTEMD_TARGET = install-systemd-local
+ # will be stored in a scripts folder in the _build_ folder
+ # which will be the source folder if you're not using a separate build folder
+ 
+-$(INSTALL_SYSTEMD_TARGET): scripts/$(SYSTEMD_SERVICE) $(INSTALL_USER_TARGET)
++$(INSTALL_SYSTEMD_TARGET): scripts/$(SYSTEMD_SERVICE)
+ 	install -d $(DESTDIR)$(systemdsystemunitdir)
+ 	[ -e $(DESTDIR)$(systemdsystemunitdir)/shairport-sync.service ] || install -m 0644 scripts/$(SYSTEMD_SERVICE) $(DESTDIR)$(systemdsystemunitdir)/shairport-sync.service
+ 
+-- 
+2.50.1 (Apple Git-155)
+

@@ -9,15 +9,18 @@ Auris is a dedicated music platform designed to deliver pristine high-resolution
 ## Features
 
 - **High-Resolution Audio Support**: Native playback of Hi-Res audio formats through USB DAC
+- **AirPlay Support**: Stream audio from iOS, macOS, and iTunes via Shairport Sync with automatic switching
 - **UPnP Renderer**: Act as UPnP/DLNA audio renderer to receive audio streams from UPnP control points
 - **Multiple Audio Sources**:
+  - AirPlay (from iOS/macOS devices)
   - SAMBA/CIFS network shares
   - USB storage devices
   - UPnP/DLNA media servers
 - **Bit-Perfect Audio**: Direct hardware access with no sample rate conversion
-- **CPU Isolation**: Dedicated CPU core (CPU 3) for audio and UPnP processing with real-time scheduling
+- **CPU Isolation**: Dedicated CPU core (CPU 3) for audio processing with real-time scheduling
   - MPD (Music Player Daemon): FIFO priority 80
   - upmpdcli (UPnP Renderer): FIFO priority 70
+- **Automatic Audio Source Switching**: Seamlessly switches between audio sources when AirPlay connects
 - **Web-Based Control**: Intuitive web interface for music library management and playback control
 - **Optimized for Audio**: Minimal Linux image focused on audio performance
 - **Raspberry Pi Ready**: Built and optimized for Raspberry Pi 5 hardware
@@ -29,46 +32,46 @@ The layer provides `auris-image`, a custom Linux image based on `core-image-mini
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│            System Architecture                          │
-├─────────────────────────────────────────────────────────┤
-│  CPU Core Distribution:                                 │
-│  ├─ CPU 0-2: General System & Networking               │
-│  └─ CPU 3: Audio Processing (Isolated, Real-time)      │
-│                                                         │
-│  ┌───────────────────────────────────────────────────┐ │
-│  │  CPU 3 (Isolated - isolcpus=3, nohz_full=3)     │ │
-│  │  ├─ MPD (Priority 80 - FIFO)                    │ │
-│  │  └─ upmpdcli (Priority 70 - FIFO)               │ │
-│  └───────────────────────────────────────────────────┘ │
-│                          ↓                              │
-│  ┌───────────────────────────────────────────────────┐ │
-│  │     Audio Output Interface                       │ │
-│  │     ├─ ALSA Mixer Configuration                 │ │
-│  │     └─ USB DAC Device Driver                    │ │
-│  └───────────────────────────────────────────────────┘ │
-│                          ↓                              │
-│  ┌───────────────────────────────────────────────────┐ │
-│  │     USB DAC (High-Resolution Audio Output)       │ │
-│  └───────────────────────────────────────────────────┘ │
-│                                                         │
-│  Audio Sources (from CPUs 0-2):                        │
-│  ├─ Network Shares (SAMBA/CIFS)                       │
-│  ├─ USB Storage                                        │
-│  ├─ UPnP/DLNA Servers                                 │
-│  └─ Web Interface Control                             │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│              System Architecture                             │
+├──────────────────────────────────────────────────────────────┤
+│  CPU Core Distribution:                                      │
+│  ├─ CPU 0-2: General System & Networking                    │
+│  └─ CPU 3: Audio Processing (Isolated, Real-time)           │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  Audio Processing Services                           │ │
+│  │  ├─ MPD (Priority 80 - FIFO)                         │ │
+│  │  ├─ Shairport Sync (AirPlay Receiver)                │ │
+│  │  └─ upmpdcli (Priority 70 - FIFO)                    │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          ↓                                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │     Audio Output Interface                            │ │
+│  │     ├─ ALSA PCM Configuration                        │ │
+│  │     └─ USB DAC Device Driver                         │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          ↓                                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │     USB DAC (High-Resolution Audio Output)            │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  Audio Sources:                                              │
+│  ├─ AirPlay (from iOS/macOS) → Shairport Sync              │
+│  ├─ UPnP/DLNA Servers → upmpdcli → MPD                     │
+│  ├─ Local Storage/SAMBA → MPD                              │
+│  └─ Web Interface Control (from CPUs 0-2)                   │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### Performance Optimization
+### Automatic Audio Source Switching
 
-The platform isolates CPU core 3 exclusively for audio processing to minimize:
-- Context switching and cache pollution
-- Scheduling latency and jitter
-- Interrupt handling on audio path
-- Inter-process communication delays between MPD and upmpdcli
+The platform automatically switches between audio sources:
+- When AirPlay connection is detected, Shairport Sync automatically stops MPD and upmpdcli
+- When AirPlay disconnects, MPD and upmpdcli automatically resume
+- This ensures seamless audio playback without manual intervention
 
-This ensures consistent, low-latency audio streaming for bit-perfect playback.
+The CPU core 3 is isolated for audio processing with real-time scheduling to ensure consistent, low-latency audio streaming for bit-perfect playback.
 
 ## Dependencies
 
@@ -183,6 +186,20 @@ After booting the Auris image:
 2. Device auto-discovers UPnP sources
 3. Select server from available sources
 
+### Using AirPlay
+
+Stream audio directly from your iOS, macOS, or iTunes device:
+
+1. Ensure the device is on the same network as the Auris system
+2. On your Apple device, open the AirPlay menu:
+   - **iOS/iPadOS**: Control Center → Music playback card → AirPlay icon
+   - **macOS**: Click the volume icon in the menu bar → AirPlay
+   - **iTunes**: Click the AirPlay icon in the lower right
+3. Select "Auris Audio" from the available AirPlay devices
+4. Start playing audio - it will stream directly to the USB DAC
+
+**Note**: When AirPlay is active, MPD and UPnP services are automatically paused. They will resume when you disconnect from AirPlay.
+
 ### Connecting USB DAC
 
 1. Connect USB DAC to Raspberry Pi
@@ -213,9 +230,10 @@ The Auris platform implements several performance optimizations:
   - Located in: `recipes-bsp/bootfiles/rpi-cmdline.bbappend`
 
 #### Real-Time Process Scheduling
-- **MPD**: `chrt -f 80` (FIFO priority 80)
-- **upmpdcli**: `chrt -f 70` (FIFO priority 70)
-- Process CPU affinity via `taskset -c 3`
+- **MPD**: `chrt -f 80` (FIFO priority 80) - Music Player Daemon for local playback
+- **Shairport Sync**: AirPlay audio receiver (standard priority)
+- **upmpdcli**: `chrt -f 70` (FIFO priority 70) - UPnP/DLNA protocol handler
+- Process CPU affinity via `taskset -c 3` - MPD and upmpdcli bound to isolated CPU core 3
 
 #### CPU Governor
 - Set to "performance" to minimize frequency scaling latency
