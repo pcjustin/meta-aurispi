@@ -15,7 +15,9 @@ Auris is a dedicated music platform designed to deliver pristine high-resolution
   - USB storage devices
   - UPnP/DLNA media servers
 - **Bit-Perfect Audio**: Direct hardware access with no sample rate conversion
-- **CPU Isolation**: Dedicated CPU core for audio processing with real-time scheduling
+- **CPU Isolation**: Dedicated CPU core (CPU 3) for audio and UPnP processing with real-time scheduling
+  - MPD (Music Player Daemon): FIFO priority 80
+  - upmpdcli (UPnP Renderer): FIFO priority 70
 - **Web-Based Control**: Intuitive web interface for music library management and playback control
 - **Optimized for Audio**: Minimal Linux image focused on audio performance
 - **Raspberry Pi Ready**: Built and optimized for Raspberry Pi 5 hardware
@@ -27,21 +29,46 @@ The layer provides `auris-image`, a custom Linux image based on `core-image-mini
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│      Web UI (Music Control)         │
-├─────────────────────────────────────┤
-│     Audio Player Engine              │
-├─────────────────────────────────────┤
-│  Source Handlers                     │
-│  ├─ SAMBA Client                     │
-│  ├─ USB Storage Monitor              │
-│  └─ UPnP/DLNA Client                 │
-├─────────────────────────────────────┤
-│     USB DAC Driver                   │
-├─────────────────────────────────────┤
-│   Linux (Yocto/OpenEmbedded)         │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│            System Architecture                          │
+├─────────────────────────────────────────────────────────┤
+│  CPU Core Distribution:                                 │
+│  ├─ CPU 0-2: General System & Networking               │
+│  └─ CPU 3: Audio Processing (Isolated, Real-time)      │
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐ │
+│  │  CPU 3 (Isolated - isolcpus=3, nohz_full=3)     │ │
+│  │  ├─ MPD (Priority 80 - FIFO)                    │ │
+│  │  └─ upmpdcli (Priority 70 - FIFO)               │ │
+│  └───────────────────────────────────────────────────┘ │
+│                          ↓                              │
+│  ┌───────────────────────────────────────────────────┐ │
+│  │     Audio Output Interface                       │ │
+│  │     ├─ ALSA Mixer Configuration                 │ │
+│  │     └─ USB DAC Device Driver                    │ │
+│  └───────────────────────────────────────────────────┘ │
+│                          ↓                              │
+│  ┌───────────────────────────────────────────────────┐ │
+│  │     USB DAC (High-Resolution Audio Output)       │ │
+│  └───────────────────────────────────────────────────┘ │
+│                                                         │
+│  Audio Sources (from CPUs 0-2):                        │
+│  ├─ Network Shares (SAMBA/CIFS)                       │
+│  ├─ USB Storage                                        │
+│  ├─ UPnP/DLNA Servers                                 │
+│  └─ Web Interface Control                             │
+└─────────────────────────────────────────────────────────┘
 ```
+
+### Performance Optimization
+
+The platform isolates CPU core 3 exclusively for audio processing to minimize:
+- Context switching and cache pollution
+- Scheduling latency and jitter
+- Interrupt handling on audio path
+- Inter-process communication delays between MPD and upmpdcli
+
+This ensures consistent, low-latency audio streaming for bit-perfect playback.
 
 ## Dependencies
 
@@ -173,6 +200,31 @@ After booting the Auris image:
 - MP3, AAC (for compatibility)
 
 ## Development
+
+### System Performance Tuning
+
+The Auris platform implements several performance optimizations:
+
+#### CPU Isolation
+- **Kernel Parameter**: `isolcpus=3 nohz_full=3 rcu_nocbs=3`
+  - Isolates CPU 3 from system scheduler
+  - Disables kernel timer interrupts on CPU 3
+  - Redirects RCU callbacks to other CPUs
+  - Located in: `recipes-bsp/bootfiles/rpi-cmdline.bbappend`
+
+#### Real-Time Process Scheduling
+- **MPD**: `chrt -f 80` (FIFO priority 80)
+- **upmpdcli**: `chrt -f 70` (FIFO priority 70)
+- Process CPU affinity via `taskset -c 3`
+
+#### CPU Governor
+- Set to "performance" to minimize frequency scaling latency
+- Applied via `cpu-performance.service`
+
+#### ALSA Configuration
+- Mixer disabled for direct hardware access
+- Zero-copy audio buffer management
+- Located in: `recipes-multimedia/alsa/alsa-config/asound.conf`
 
 ### Adding Custom Recipes
 
