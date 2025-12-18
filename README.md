@@ -254,6 +254,7 @@ For issues and feature requests, please use the issue tracker.
 - [ ] Gapless playback
 - [ ] Playlist management
 - [ ] Album art display
+- [ ] RAM boot support
 
 ## Acknowledgments
 
