@@ -1,0 +1,16 @@
+[Unit]
+Description=sched_ext LAVD Scheduler
+Documentation=https://github.com/sched-ext/scx
+After=sysinit.target
+Conflicts=scx_rusty.service scx_bpfland.service scx_layered.service scx_rustland.service scx_beerland.service scx_cosmos.service scx_flash.service scx_mitosis.service scx_p2dq.service scx_rlfifo.service scx_tickless.service scx_wd40.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/scx_lavd
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
