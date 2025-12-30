@@ -1,7 +1,15 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
+DEPENDS:append = " pahole-native"
+
+# Set pahole path for BTF support
+PAHOLE = "${STAGING_BINDIR_NATIVE}/pahole"
+export PAHOLE
+EXTRA_OEMAKE:append = " PAHOLE=${PAHOLE}"
+
 SRC_URI:append = " file://usb-audio.cfg \
                    file://initramfs.cfg \
+                   file://bpf.cfg \
 "
 
 # Symlink Image to Image-initramfs so bootimg-partition uses the bundled kernel
