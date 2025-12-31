@@ -1,0 +1,33 @@
+From 490f782e14a85b1d52fd81680e144ae4028acc2f Mon Sep 17 00:00:00 2001
+From: Justin Lu <lu.justin@inventec.com>
+Date: Wed, 31 Dec 2025 14:22:42 +0800
+Subject: [PATCH] scx: fix -mcpu=v3 for ARM64 cross-compilation
+
+Fix BPF CPU flag being incorrectly applied to ARM64 host compilation.
+The -mcpu=v3 flag is only valid for BPF targets, not for ARM64.
+
+Upstream-Status: Pending
+
+Signed-off-by: Justin Lu <lu.justin@inventec.com>
+---
+ rust/scx_cargo/src/clang_info.rs | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/rust/scx_cargo/src/clang_info.rs b/rust/scx_cargo/src/clang_info.rs
+index 6736a489..2f78a316 100644
+--- a/rust/scx_cargo/src/clang_info.rs
++++ b/rust/scx_cargo/src/clang_info.rs
+@@ -166,7 +166,9 @@ impl ClangInfo {
+             .map(|x| x.into())
+             .collect();
+         cflags.push(format!("-D__TARGET_ARCH_{}", &kernel_target));
+-        cflags.push("-mcpu=v3".into());
++        if kernel_target == "bpf" {
++            cflags.push("-mcpu=v3".into());
++        }
+         cflags.push(format!("-m{endian}-endian"));
+         cflags.append(
+             &mut sys_incls
+-- 
+2.51.0
+
