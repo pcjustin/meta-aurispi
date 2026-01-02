@@ -17,6 +17,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI = "https://www.lesbonscomptes.com/upmpdcli/downloads/upmpdcli-${PV}.tar.gz \
            file://upmpdcli.conf \
            file://0001-Remove-UPnP-AV-suffix-from-AV-device-friendly-name-i.patch \
+           file://icon.png \
            "
 SRC_URI[sha256sum] = "7b10cc35cae9377c542aba3983dfd39e34b4dd5fff64512f54feb87e64cf8609"
 
@@ -32,6 +33,9 @@ EXTRA_OEMESONFLAGS = "-Dmpdupnp=enabled"
 do_install:append() {
     install -d ${D}${sysconfdir}
     install -m 0644 ${UNPACKDIR}/upmpdcli.conf ${D}${sysconfdir}/
+
+    # Install UPnP device icon
+    install -m 0644 ${UNPACKDIR}/icon.png ${D}${datadir}/upmpdcli/icon.png
 
     install -d ${D}${systemd_system_unitdir}
     install -m 0644 ${S}/systemd/upmpdcli.service ${D}${systemd_system_unitdir}/

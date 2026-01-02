@@ -1,5 +1,7 @@
 # meta-aurispi
 
+![Auris Logo](logo.png)
+
 A Yocto/OpenEmbedded BSP layer for building Auris, a high-resolution audio streaming platform.
 
 ## Overview
